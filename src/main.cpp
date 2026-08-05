@@ -20,6 +20,8 @@ void timerState();
 void defState();
 void runTimer();
 void workTimer();
+void breakSetState();
+void breakTimer();
 
 void setup() {
     auto cfg = M5.config();
@@ -32,6 +34,20 @@ void setup() {
     M5Cardputer.Display.drawString("YushidoroM5", M5Cardputer.Display.width() / 2, M5Cardputer.Display.height() / 2);
     delay(1000);
     M5Cardputer.Display.clear();
+    
+    M5Cardputer.Speaker.setVolume(255);
+    M5Cardputer.Speaker.tone(10000, 100);
+    delay(1000);
+    M5Cardputer.Speaker.tone(4000, 20);
+    delay(1000);
+    M5Cardputer.Speaker.tone(10000, 100);
+    delay(1000);
+    M5Cardputer.Speaker.tone(4000, 20);
+    delay(1000);
+    M5Cardputer.Speaker.tone(10000, 100);
+    delay(1000);
+    M5Cardputer.Speaker.tone(4000, 20);
+    delay(1000);
 }
 
 void loop() {
@@ -62,6 +78,16 @@ void stateLoad(int state){
     workTimer();
     break;
 
+
+  case 5:
+    breakSetState();
+    break;
+
+
+  case 6:
+    breakTimer();
+    break;
+
   default:
     break;
   }
@@ -75,10 +101,10 @@ void pomoState(){
     M5Cardputer.Display.setFont(&fonts::FreeSans9pt7b);
     M5Cardputer.Display.drawString("Set work time (Minutes):", M5Cardputer.Display.width() / 2, 15+30);
     M5Cardputer.Display.setFont(&fonts::FreeSansBold24pt7b);
-    M5Cardputer.Display.drawNumber(timerMinutes, M5Cardputer.Display.width() / 2, 15+15+60);
+    M5Cardputer.Display.drawNumber(workMinute, M5Cardputer.Display.width() / 2, 15+15+60);
 
-      if(timerMinutes >= 61 || timerMinutes < 0){
-        timerMinutes = 0;
+      if(workMinute >= 61 ||  workMinute < 0){
+        workMinute = 0;
         M5Cardputer.Display.clear();
       }else{
       }
@@ -90,22 +116,72 @@ void pomoState(){
       }else if(M5Cardputer.Keyboard.isKeyPressed('=')){
 
         M5Cardputer.Display.clear();
-        timerMinutes += 5;
+        workMinute += 5;
 
       }else if(M5Cardputer.Keyboard.isKeyPressed('-')){
 
         M5Cardputer.Display.clear();
-        timerMinutes -= 5;
+        workMinute-= 5;
 
       }else if(M5Cardputer.Keyboard.isKeyPressed(';')){
 
         M5Cardputer.Display.clear();
-        timerMinutes += 1;
+        workMinute += 1;
 
       }else if(M5Cardputer.Keyboard.isKeyPressed('.')){
 
         M5Cardputer.Display.clear();
-        timerMinutes -= 1;
+        workMinute -= 1;
+
+      }else if(M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)){
+
+        M5Cardputer.Display.clear();
+        mainState = 5;
+        
+      }else{
+      }
+    }
+}
+
+void breakSetState(){
+
+    M5Cardputer.Display.setTextColor(BLUE, BLACK);
+    M5Cardputer.Display.setFont(&fonts::FreeSansBold12pt7b);
+    M5Cardputer.Display.drawString("POMO MODE", M5Cardputer.Display.width() / 2, 15);
+    M5Cardputer.Display.setFont(&fonts::FreeSans9pt7b);
+    M5Cardputer.Display.drawString("Set break time (Minutes):", M5Cardputer.Display.width() / 2, 15+30);
+    M5Cardputer.Display.setFont(&fonts::FreeSansBold24pt7b);
+    M5Cardputer.Display.drawNumber(breakMinute, M5Cardputer.Display.width() / 2, 15+15+60);
+
+      if(breakMinute >= 61 ||  breakMinute < 0){
+        breakMinute = 0;
+        M5Cardputer.Display.clear();
+      }else{
+      }
+
+    if(M5Cardputer.Keyboard.isChange()){
+      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+        M5Cardputer.Display.clear();
+        mainState = 0;
+      }else if(M5Cardputer.Keyboard.isKeyPressed('=')){
+
+        M5Cardputer.Display.clear();
+        breakMinute += 5;
+
+      }else if(M5Cardputer.Keyboard.isKeyPressed('-')){
+
+        M5Cardputer.Display.clear();
+        breakMinute-= 5;
+
+      }else if(M5Cardputer.Keyboard.isKeyPressed(';')){
+
+        M5Cardputer.Display.clear();
+        breakMinute += 1;
+
+      }else if(M5Cardputer.Keyboard.isKeyPressed('.')){
+
+        M5Cardputer.Display.clear();
+        breakMinute -= 1;
 
       }else if(M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)){
 
@@ -166,6 +242,7 @@ void timerState(){
       }
     }
 }
+
 void defState(){
 
     M5Cardputer.Display.setFont(&fonts::FreeSansBold12pt7b);
@@ -210,10 +287,6 @@ void runTimer() {
       delay(1000);
       M5Cardputer.Speaker.tone(4000, 20);
       delay(1000);
-      M5Cardputer.Speaker.tone(10000, 100);
-      delay(1000);
-      M5Cardputer.Speaker.tone(4000, 20);
-      delay(1000);
 
       minute = 60;
 
@@ -223,6 +296,13 @@ void runTimer() {
 
       Serial.println("TIMER_DONE!");
     }
+  }
+
+  if(M5Cardputer.Keyboard.isChange()){
+      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+             M5Cardputer.Display.clear();
+             mainState = 0;
+      }
   }
 
 }
@@ -234,30 +314,54 @@ void workTimer() {
 
   if (cMills - prevMills >= timeInt) {
     M5Cardputer.Display.setTextColor(YELLOW,BLACK);
-    M5Cardputer.Display.drawNumber(timerMinutes, M5Cardputer.Display.width() / 2, 30);
+    M5Cardputer.Display.drawNumber(workMinute, M5Cardputer.Display.width() / 2, 30);
     M5Cardputer.Display.drawNumber(minute, M5Cardputer.Display.width() / 2, 80);
     prevMills = cMills;
     minute--;
 
-    if ((minute < 0 && timerMinutes > 0) || minute == 60) {
+    if ((minute < 0 && workMinute > 0) || minute == 60) {
 
       minute = 59;
-      timerMinutes--;
-      Serial.println(timerMinutes);
-    } else if (minute < 0 && timerMinutes == 0) {
+      workMinute--;
+    } else if (minute < 0 && workMinute == 0) {
 
-      M5Cardputer.Speaker.tone(10000, 100);
-      delay(1000);
-      M5Cardputer.Speaker.tone(4000, 20);
-      delay(1000);
-      M5Cardputer.Speaker.tone(10000, 100);
-      delay(1000);
-      M5Cardputer.Speaker.tone(4000, 20);
-      delay(1000);
-      M5Cardputer.Speaker.tone(10000, 100);
-      delay(1000);
-      M5Cardputer.Speaker.tone(4000, 20);
-      delay(1000);
+
+      minute = 60;
+
+      M5Cardputer.Display.clear();
+      mainState = 6;
+
+
+      Serial.println("TIMER_DONE!");
+    }
+  }
+
+  if(M5Cardputer.Keyboard.isChange()){
+      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+             M5Cardputer.Display.clear();
+             mainState = 0;
+      }
+  }
+}
+
+
+void breakTimer() {
+
+  unsigned long cMills = millis();
+
+  if (cMills - prevMills >= timeInt) {
+    M5Cardputer.Display.setTextColor(YELLOW,BLACK);
+    M5Cardputer.Display.drawNumber(breakMinute, M5Cardputer.Display.width() / 2, 30);
+    M5Cardputer.Display.drawNumber(minute, M5Cardputer.Display.width() / 2, 80);
+    prevMills = cMills;
+    minute--;
+
+    if ((minute < 0 && breakMinute > 0) || minute == 60) {
+
+      minute = 59;
+      breakMinutes--;
+    } else if (minute < 0 && breakMinute == 0) {
+
 
       minute = 60;
 
@@ -269,4 +373,10 @@ void workTimer() {
     }
   }
 
+  if(M5Cardputer.Keyboard.isChange()){
+      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+             M5Cardputer.Display.clear();
+             mainState = 0;
+      }
+  }
 }
