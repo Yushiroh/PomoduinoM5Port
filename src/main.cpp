@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "M5Cardputer.h"
+#include <M5GFX.h>
 
 int mainState = 0;
 int timerMinutes = 0;
@@ -10,6 +11,7 @@ int minute = 60;
 int savedMinute;
 int savedBreak;
 int soundState = 1;
+int masterVolume = 255;
 
 unsigned long prevMills = 0;
 unsigned long timeInt = 1000;
@@ -22,6 +24,10 @@ void runTimer();
 void workTimer();
 void breakSetState();
 void breakTimer();
+void beepTone(int toneVal, int volume);
+void resetParams();
+void postSesh();
+void postTimer();
 
 void setup() {
     auto cfg = M5.config();
@@ -33,27 +39,13 @@ void setup() {
     M5Cardputer.Display.setTextSize(1);
     M5Cardputer.Display.drawString("YushidoroM5", M5Cardputer.Display.width() / 2, M5Cardputer.Display.height() / 2);
     delay(1000);
+    beepTone(1,masterVolume);
     M5Cardputer.Display.clear();
-    
-    M5Cardputer.Speaker.setVolume(255);
-    M5Cardputer.Speaker.tone(10000, 100);
-    delay(1000);
-    M5Cardputer.Speaker.tone(4000, 20);
-    delay(1000);
-    M5Cardputer.Speaker.tone(10000, 100);
-    delay(1000);
-    M5Cardputer.Speaker.tone(4000, 20);
-    delay(1000);
-    M5Cardputer.Speaker.tone(10000, 100);
-    delay(1000);
-    M5Cardputer.Speaker.tone(4000, 20);
-    delay(1000);
 }
 
 void loop() {
     M5Cardputer.update();
     stateLoad(mainState);
-
 }
 
 void stateLoad(int state){
@@ -86,6 +78,16 @@ void stateLoad(int state){
 
   case 6:
     breakTimer();
+    break;
+
+
+  case 7:
+    postSesh();
+    break;
+
+
+  case 8:
+    postTimer();
     break;
 
   default:
@@ -136,6 +138,7 @@ void pomoState(){
       }else if(M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)){
 
         M5Cardputer.Display.clear();
+        savedMinute = workMinute;
         mainState = 5;
         
       }else{
@@ -187,6 +190,7 @@ void breakSetState(){
 
         M5Cardputer.Display.clear();
         mainState = 4;
+        savedBreak = breakMinute;
         
       }else{
       }
@@ -263,120 +267,184 @@ void defState(){
 }
 
 void runTimer() {
-
   unsigned long cMills = millis();
-
   if (cMills - prevMills >= timeInt) {
     M5Cardputer.Display.drawNumber(timerMinutes, M5Cardputer.Display.width() / 2, 30);
     M5Cardputer.Display.drawNumber(minute, M5Cardputer.Display.width() / 2, 80);
     prevMills = cMills;
     minute--;
 
-    if ((minute < 0 && timerMinutes > 0) || minute == 60) {
-
-      minute = 59;
-      timerMinutes--;
-      Serial.println(timerMinutes);
-    } else if (minute < 0 && timerMinutes == 0) {
-
-      M5Cardputer.Speaker.tone(10000, 100);
-      delay(1000);
-      M5Cardputer.Speaker.tone(4000, 20);
-      delay(1000);
-      M5Cardputer.Speaker.tone(10000, 100);
-      delay(1000);
-      M5Cardputer.Speaker.tone(4000, 20);
-      delay(1000);
-
-      minute = 60;
-
+    if ((minute < 0 && timerMinutes > 0) || minute == 60){
+        minute = 59;
+        timerMinutes--;
+        Serial.println(timerMinutes);
+    }else if(minute < 0 && timerMinutes == 0) {
       M5Cardputer.Display.clear();
-      mainState = 0;
+      mainState = 8;
+      if(M5Cardputer.Keyboard.isChange()){
+          if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+                M5Cardputer.Display.clear();
+                mainState = 0;
+          }
+        }
+    }
 
-
-      Serial.println("TIMER_DONE!");
+    if(M5Cardputer.Keyboard.isChange()){
+        if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+              M5Cardputer.Display.clear();
+              mainState = 0;
+        }
     }
   }
-
-  if(M5Cardputer.Keyboard.isChange()){
-      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
-             M5Cardputer.Display.clear();
-             mainState = 0;
-      }
-  }
-
 }
 
-
 void workTimer() {
-
+  
   unsigned long cMills = millis();
-
   if (cMills - prevMills >= timeInt) {
     M5Cardputer.Display.setTextColor(YELLOW,BLACK);
-    M5Cardputer.Display.drawNumber(workMinute, M5Cardputer.Display.width() / 2, 30);
-    M5Cardputer.Display.drawNumber(minute, M5Cardputer.Display.width() / 2, 80);
+    M5Cardputer.Display.setFont(&fonts::FreeSans9pt7b);
+    M5Cardputer.Display.drawString("WORK TIME!", M5Cardputer.Display.width() / 2,20);
+    M5Cardputer.Display.setFont(&fonts::FreeSansBold24pt7b);
+    M5Cardputer.Display.drawString(":", M5Cardputer.Display.width() / 2, M5Cardputer.Display.height() / 2);
+    M5Cardputer.Display.drawNumber(workMinute, (M5Cardputer.Display.width() / 2) - 40, M5Cardputer.Display.height() / 2);
+    M5Cardputer.Display.drawNumber(minute, (M5Cardputer.Display.width() / 2) + 40, M5Cardputer.Display.height() / 2);
     prevMills = cMills;
     minute--;
-
     if ((minute < 0 && workMinute > 0) || minute == 60) {
-
       minute = 59;
       workMinute--;
     } else if (minute < 0 && workMinute == 0) {
-
-
       minute = 60;
-
       M5Cardputer.Display.clear();
-      mainState = 6;
-
-
-      Serial.println("TIMER_DONE!");
+      mainState = 7;
+    }else if(minute == 9){
+      M5Cardputer.Display.clear();
     }
   }
 
   if(M5Cardputer.Keyboard.isChange()){
       if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+            resetParams();
              M5Cardputer.Display.clear();
              mainState = 0;
       }
   }
 }
+
 
 
 void breakTimer() {
 
   unsigned long cMills = millis();
-
   if (cMills - prevMills >= timeInt) {
     M5Cardputer.Display.setTextColor(YELLOW,BLACK);
-    M5Cardputer.Display.drawNumber(breakMinute, M5Cardputer.Display.width() / 2, 30);
-    M5Cardputer.Display.drawNumber(minute, M5Cardputer.Display.width() / 2, 80);
+    M5Cardputer.Display.setFont(&fonts::FreeSans9pt7b);
+    M5Cardputer.Display.drawString("Break time!", M5Cardputer.Display.width() / 2,20);
+    M5Cardputer.Display.setFont(&fonts::FreeSansBold24pt7b);
+    M5Cardputer.Display.drawString(":", M5Cardputer.Display.width() / 2, M5Cardputer.Display.height() / 2);
+    M5Cardputer.Display.drawNumber(breakMinute, (M5Cardputer.Display.width() / 2) - 40, M5Cardputer.Display.height() / 2);
+    M5Cardputer.Display.drawNumber(minute, (M5Cardputer.Display.width() / 2) + 40, M5Cardputer.Display.height() / 2);
     prevMills = cMills;
     minute--;
-
     if ((minute < 0 && breakMinute > 0) || minute == 60) {
 
       minute = 59;
       breakMinutes--;
     } else if (minute < 0 && breakMinute == 0) {
-
-
       minute = 60;
-
+      beepTone(1,masterVolume);
       M5Cardputer.Display.clear();
       mainState = 0;
-
-
-      Serial.println("TIMER_DONE!");
+    }else if(minute == 9){
+      M5Cardputer.Display.clear();
     }
   }
 
   if(M5Cardputer.Keyboard.isChange()){
       if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
              M5Cardputer.Display.clear();
+             resetParams();
              mainState = 0;
       }
   }
+}
+
+void postSesh(){
+
+  M5Cardputer.Display.setTextColor(YELLOW,BLACK);
+  M5Cardputer.Display.setFont(&fonts::FreeSans9pt7b);
+  M5Cardputer.Display.drawString("Session Finished!", M5Cardputer.Display.width() / 2,20);
+  M5Cardputer.Display.drawString("Press Space to Continue", M5Cardputer.Display.width() / 2, M5Cardputer.Display.height() / 2);
+
+  beepTone(1,255);
+
+  if(M5Cardputer.Keyboard.isChange()){
+      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+             M5Cardputer.Display.clear();
+             resetParams();
+             mainState = 0;
+      }else if(M5Cardputer.Keyboard.isKeyPressed(' ')){
+             M5Cardputer.Display.clear();
+             workMinute = savedMinute;
+             breakMinute = savedBreak;
+             mainState = 4;
+      }
+  }
+}
+
+void postTimer(){
+
+  M5Cardputer.Display.setTextColor(YELLOW,BLACK);
+  M5Cardputer.Display.setFont(&fonts::FreeSans9pt7b);
+  M5Cardputer.Display.drawString("Timer Finished!", M5Cardputer.Display.width() / 2,20);
+  M5Cardputer.Display.drawString("Press del to exit", M5Cardputer.Display.width() / 2, M5Cardputer.Display.height() / 2);
+
+  beepTone(1,255);
+
+  if(M5Cardputer.Keyboard.isChange()){
+      if(M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)){
+             M5Cardputer.Display.clear();
+             resetParams();
+             mainState = 0;
+      } 
+    }
+}
+
+void beepTone(int toneVal, int volume){
+
+  M5Cardputer.Speaker.setVolume(volume);
+  switch (toneVal)
+  {
+  case 1:
+    M5Cardputer.Speaker.tone(4000, 100);
+    delay(300);
+    M5Cardputer.Speaker.tone(4000, 100);
+    delay(500);
+    M5Cardputer.Speaker.tone(4000, 100);
+    delay(300);
+    M5Cardputer.Speaker.tone(4000, 100);
+    delay(500);
+    break;
+  case 2:
+    M5Cardputer.Speaker.tone(4000, 100);
+    delay(300);
+    M5Cardputer.Speaker.tone(4000, 100);
+    delay(500);
+    break;
+
+  default:
+    break;
+  }
+}
+
+void resetParams(){
+
+  mainState = 0;
+  timerMinutes = 0;
+  workMinute = 0;
+  breakMinute = 0;
+  breakMinutes = 1;
+  minute = 60;
+
 }
